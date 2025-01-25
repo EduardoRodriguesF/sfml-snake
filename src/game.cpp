@@ -1,55 +1,7 @@
 #include <SFML/Graphics.hpp>
-#include <iostream>
 #include <queue>
 #include "game.h"
-
-Snake::Snake() {
-	direction = Direction::Right;
-	head = Node(sf::Vector2f(3.f, 3.f));
-}
-
-void Snake::grow() {
-	auto ptr = &head;
-
-	while (ptr->next != nullptr) {
-		ptr = ptr->next.get();
-	}
-
-	ptr->next = std::make_unique<Node>(Node(ptr->value));
-}
-
-void Snake::move() {
-	sf::Vector2f lastPos = this->head.value;
-
-	switch (this->direction) {
-	case Direction::Right:
-		head.value.x++;
-		break;
-	case Direction::Down:
-		head.value.y++;
-		break;
-	case Direction::Left:
-		head.value.x--;
-		break;
-	case Direction::Up:
-		head.value.y--;
-		break;
-	}
-
-	auto ptr = head.next.get();
-	while (ptr != nullptr) {
-		std::swap(ptr->value, lastPos);
-		ptr = ptr->next.get();
-	}
-}
-
-void Snake::draw(sf::RectangleShape& pixel, sf::RenderWindow& window) {
-	auto ptr = &this->head;
-	do {
-		pixel.setPosition(ptr->value);
-		window.draw(pixel);
-	} while (ptr = ptr->next.get());
-}
+#include "Snake.h"
 
 Game::Game() {
 	pixel.setSize(sf::Vector2f(1.f, 1.f));
@@ -59,9 +11,12 @@ Game::Game() {
 }
 
 void Game::reset() {
+    srand(time(0));
+
 	this->placeFood();
 	this->snake = Snake();
 	this->snake.grow();
+	this->speed = 10.f;
 }
 
 void Game::placeFood() {
@@ -112,6 +67,35 @@ void Game::handleInput() {
 	inputQueue.push(input);
 }
 
+void Game::loop(sf::RenderWindow& window) {
+    sf::Time accumulator;
+
+    while (window.isOpen())
+    {
+        while (const std::optional event = window.pollEvent())
+        {
+            if (event->is<sf::Event::Closed>())
+            {
+                window.close();
+            }
+        }
+
+        this->handleInput();
+
+		sf::Time elapsed = clock.restart();
+		accumulator += elapsed;
+
+		while (accumulator.asSeconds() >= 1.f / this->speed) {
+			this->update();
+			accumulator -= sf::seconds(1.f / this->speed);
+		}
+
+        window.clear();
+        this->draw(window);
+        window.display();
+    }
+}
+
 void Game::update() {
 	if (inputQueue.size() > 0) {
 		auto next = inputQueue.front();
@@ -126,6 +110,7 @@ void Game::update() {
 
 	if (snake.head.value == this->food) {
 		snake.grow();
+		this->speed += 0.5f;
 		Game::placeFood();
 	}
 
