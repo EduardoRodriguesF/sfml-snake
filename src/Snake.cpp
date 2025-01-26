@@ -41,6 +41,10 @@ void Snake::move() {
 }
 
 void Snake::draw(sf::RectangleShape& pixel, sf::RenderWindow& window) {
+    if (blink) {
+        return;
+    }
+
 	auto ptr = &this->head;
 	do {
 		pixel.setPosition(ptr->value);

@@ -3,6 +3,14 @@
 #include <queue>
 #include "Snake.h"
 
+constexpr float INITIAL_SPEED = 10.f;
+
+enum class GameState {
+    Playing,
+    LoseSequence,
+    GameOver,
+};
+
 class Game {
 public:
 	Game();
@@ -12,6 +20,7 @@ public:
 	void draw(sf::RenderWindow& window);
 
 private:
+    GameState state;
 	sf::Clock clock;
 	std::queue<Direction> inputQueue;
 
@@ -22,4 +31,8 @@ private:
 
 	void placeFood();
 	void reset();
+
+    void changeState(GameState state);
+    void update_loseSequence();
+    void update_gameOver();
 };

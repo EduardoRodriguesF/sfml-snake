@@ -21,6 +21,7 @@ public:
 
 	Direction direction;
 	Node head;
+    bool blink = false;
 
 	Snake();
 	void move();

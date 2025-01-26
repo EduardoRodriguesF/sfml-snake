@@ -16,7 +16,7 @@ void Game::reset() {
 	this->placeFood();
 	this->snake = Snake();
 	this->snake.grow();
-	this->speed = 10.f;
+	this->speed = INITIAL_SPEED;
 }
 
 void Game::placeFood() {
@@ -80,19 +80,61 @@ void Game::loop(sf::RenderWindow& window) {
             }
         }
 
-        this->handleInput();
+        switch (this->state) {
+            case GameState::Playing: {
+                this->handleInput();
 
-		sf::Time elapsed = clock.restart();
-		accumulator += elapsed;
+                sf::Time elapsed = clock.restart();
+                accumulator += elapsed;
 
-		while (accumulator.asSeconds() >= 1.f / this->speed) {
-			this->update();
-			accumulator -= sf::seconds(1.f / this->speed);
-		}
+                while (accumulator.asSeconds() >= 1.f / this->speed) {
+                    this->update();
+                    accumulator -= sf::seconds(1.f / this->speed);
+                }
+                break;
+            }
+            case GameState::LoseSequence:
+                this->update_loseSequence();
+                break;
+            case GameState::GameOver:
+                this->update_gameOver();
+                break;
+        }
 
         window.clear();
         this->draw(window);
         window.display();
+    }
+}
+
+void Game::update_loseSequence() {
+    static int blinkCount = 0;
+    static float blinkTime = 0.4f;
+
+    blinkTime -= this->clock.restart().asSeconds();
+
+    if (blinkTime <= 0.f) {
+        snake.blink = !snake.blink;
+        blinkTime = 0.4f;
+        blinkCount++;
+    }
+
+    if (blinkCount == 6) {
+        this->changeState(GameState::GameOver);
+    }
+}
+
+void Game::update_gameOver() {
+    this->changeState(GameState::Playing);
+}
+
+void Game::changeState(GameState state) {
+    this->state = state;
+
+    if (this->state == GameState::LoseSequence) {
+        this->speed = INITIAL_SPEED;
+    } else if (this->state == GameState::GameOver) {
+        this->reset();
     }
 }
 
@@ -117,8 +159,8 @@ void Game::update() {
 	auto ptr = &snake.head;
 	while (ptr = ptr->next.get()) {
 		if (ptr->value == snake.head.value) {
-			this->reset();
-			break;
+            this->changeState(GameState::LoseSequence);
+            return;
 		}
 	}
 }
